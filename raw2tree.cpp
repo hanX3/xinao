@@ -15,7 +15,7 @@ void raw2tree()
   tr->Branch("run", &run);
   tr->Branch("data", &v_data);
 
-  for(run=9374;run<=9426;run++){
+  for(run=0001;run<=9482;run++){
     readcsv(run, v_data);
     tr->Fill();
     cout << run << " size " << v_data.size() << endl;
