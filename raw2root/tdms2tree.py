@@ -5,6 +5,8 @@ import ROOT
 import numpy as np
 from array import array
 
+import argparse
+
 #
 DATA_DIR = "/mnt/c/Users/hanX/OneDrive/works/11Bpg/dpp/data/"
 GP = "DAQ Data"
@@ -41,7 +43,7 @@ def extract_channel_data(group):
 
 #
 def tdms2tree(time_str, data, props):
-    fo = ROOT.TFile(f"./rootfile/{time_str}.root", "RECREATE")
+    fo = ROOT.TFile(f"../rootfile/{time_str}.root", "RECREATE")
     length = props['Length']
     wf_increment = props['wf_increment']
     duration = length/(wf_increment/1000)
@@ -70,6 +72,8 @@ def tdms2tree(time_str, data, props):
 
 ##
 def main(data_name):
+    print(f"Processing: {data_name}")
+
     tdms_file_name = f"{DATA_DIR}{data_name}/{data_name}.tdms"
     tdms_file, time_str = read_tdms_file(tdms_file_name)
     if tdms_file is None:
@@ -82,6 +86,9 @@ def main(data_name):
   
 ##
 if __name__ == "__main__":
-    data_name = "Date_2025520130306"
-    main(data_name)
+    par = argparse.ArgumentParser(description="Process data by name.")
+    par.add_argument("data_name", help="The name of the data to process")
+    args = par.parse_args()
+    
+    main(args.data_name)
 
