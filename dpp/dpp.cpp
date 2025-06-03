@@ -29,7 +29,7 @@ dpp::dpp(const std::string &fi_name, const std::string &fo_name)
   //
   fo = new TFile(fo_name.c_str(), "recreate");
   tr = new TTree("tr", "wave info");
-  tr->Branch("data", &v_data);
+  // tr->Branch("data", &v_data);
   tr->Branch("energy", &v_energy);
 
   //
@@ -48,7 +48,7 @@ void dpp::Process()
 {
   std::cout << "all entries " << rw->GetEntries() << std::endl;
 
-  for(Long64_t i=0;i<14;i++){
+  for(Long64_t i=0;i<rw->GetEntries();++i){
     Process_entry(i);
   }
 
@@ -67,6 +67,9 @@ void dpp::Process_entry(Long64_t n_entry)
 
   v_data = tc->GetData();
   v_energy = tc->GetEnergy();
+
+  std::cout << "v_data " << v_data.size() << std::endl;
+  std::cout << "v_energy " << v_energy.size() << std::endl;
 
   tr->Fill();
 }

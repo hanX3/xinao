@@ -12,6 +12,7 @@
 #include <TChain.h>
 #include <TFile.h>
 
+
 // Header file for the classes stored in the TTree if any.
 
 class raw {
@@ -22,7 +23,7 @@ public :
 // Fixed size dimensions of array or collections stored in the TTree if any.
 
    // Declaration of leaf types
-   Short_t         w[60000000];
+   Short_t         w[999999999];
 
    // List of branches
    TBranch        *b_w;   //!

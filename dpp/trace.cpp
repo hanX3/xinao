@@ -60,6 +60,11 @@ void trace::ComputeHits()
       v_indices.push_back(i);
     }
   }
+  
+  if(v_indices.size()==0){
+    std::cout << "none hits." << std::endl;
+    return;
+  }
 
   v_hit_tag.push_back(v_indices[0]);
   for(size_t i=1;i<v_indices.size();++i){
