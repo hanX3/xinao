@@ -1,10 +1,18 @@
 //
-void draw_energy()
+void draw_energy(string name)
 {
   TCanvas *c1 = new TCanvas("c1", "", 500, 400);
   c1->cd();
 
-  TTree *tr = (TTree*)gFile->Get("tr");
+  TFile *fo = new TFile(TString::Format("../rootfile/%s_dpp_hist.root",name.c_str()).Data(), "recreate");
+
+  TFile *fi = TFile::Open(TString::Format("../rootfile/%s_dpp.root",name.c_str()).Data());
+  if(fi->IsZombie()){
+    cout << "can not open " << name << endl;
+    return;
+  }
+
+  TTree *tr = (TTree*)fi->Get("tr");
 
   std::vector<double> *energy = nullptr;
 
@@ -20,5 +28,15 @@ void draw_energy()
     }
   }
 
+  h->SetTitle(name.c_str());
+  h->GetXaxis()->SetTitle("channel");
+  h->GetYaxis()->SetTitle("counts");
   h->Draw();
+
+  fo->cd();
+  h->Write();
+  fo->Close();
+
+  c1->SaveAs(TString::Format("./fig/%s_hist.png",name.c_str()));
+  fi->Close();
 }
