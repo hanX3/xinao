@@ -5,10 +5,12 @@ import ROOT
 import numpy as np
 from array import array
 
+from tqdm import tqdm
+
 import argparse
 
 #
-DATA_DIR = "/mnt/e/11Bpg/data/"
+DATA_DIR = "/mnt/e/11Bpg/data/5160_data/Am241-gamma/Test_+PL_00030/"
 GP = "DAQ Data"
 CH = "CH01"
 
@@ -42,7 +44,7 @@ def extract_channel_data(group):
 
 #
 def tdms2tree_sic(time_str, data, props):
-    fo = ROOT.TFile(f"../rootfile/{time_str}.root", "RECREATE")
+    fo = ROOT.TFile(f"{DATA_DIR}../rootfile/{time_str}.root", "RECREATE")
     length = props['Length']
     wf_increment = props['wf_increment']
     duration = length/(wf_increment/1000)
@@ -59,7 +61,7 @@ def tdms2tree_sic(time_str, data, props):
     tr.Branch("w", w, f"w[{length}]/S")
 
     n_entry = len(data) // length
-    for i in range(n_entry):
+    for i in tqdm(range(n_entry), desc="Filling Tree", unit="entry"):
         entry = data[i * length : (i + 1) * length]
         for j in range(length):
             w[j] = entry[j]
@@ -71,7 +73,7 @@ def tdms2tree_sic(time_str, data, props):
 
 #
 def tdms2tree_axuv(time_str, data, props):
-    fo = ROOT.TFile(f"../rootfile/{time_str}.root", "RECREATE")
+    fo = ROOT.TFile(f"{DATA_DIR}../rootfile/{time_str}.root", "RECREATE")
     length = props['wf_samples']
 
     print(f"length {length}")
@@ -82,7 +84,7 @@ def tdms2tree_axuv(time_str, data, props):
     tr.Branch("w", w, f"w[{length}]/S")
 
     n_entry = len(data) // length
-    for i in range(n_entry):
+    for i in tqdm(range(n_entry), desc="Filling Tree", unit="entry"):
         entry = data[i * length : (i + 1) * length]
         for j in range(length):
             w[j] = entry[j]
@@ -92,12 +94,34 @@ def tdms2tree_axuv(time_str, data, props):
     fo.Close()
     print(f"Tree saved to {time_str}.root with {n_entry} entries.")
 
+#
+def tdms2tree_gagg(time_str, data, props):
+    fo = ROOT.TFile(f"{DATA_DIR}../../../../rootfile/{time_str}.root", "RECREATE")
+    length = props['wf_samples']
+
+    print(f"length {length}")
+
+    tr = ROOT.TTree(f"tr", f"{length}")
+
+    w = array('h', [0]*length)
+    tr.Branch("w", w, f"w[{length}]/S")
+
+    n_entry = len(data) // length
+    for i in tqdm(range(n_entry), desc="Filling Tree", unit="entry"):
+        entry = data[i * length : (i + 1) * length]
+        for j in range(length):
+            w[j] = int(entry[j])
+        tr.Fill()
+
+    tr.Write()
+    fo.Close()
+    print(f"Tree saved to {time_str}.root with {n_entry} entries.")
 
 ##
 def main(data_name):
     print(f"Processing: {data_name}")
 
-    tdms_file_name = f"{DATA_DIR}Date_{data_name}.tdms"
+    tdms_file_name = f"{DATA_DIR}{data_name}.tdms"
     print(f"{tdms_file_name}")
     tdms_file  = read_tdms_file(tdms_file_name)
     if tdms_file is None:
@@ -106,7 +130,7 @@ def main(data_name):
     data_dict, props_dict = extract_channel_data(tdms_file[GP])
     data = data_dict[CH]
     props = props_dict[CH]
-    tdms2tree_axuv(data_name, data, props)
+    tdms2tree_gagg(data_name, data, props)
 
 ##
 if __name__ == "__main__":

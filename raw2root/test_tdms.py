@@ -1,6 +1,6 @@
 from nptdms import TdmsFile
 
-tdms_file = TdmsFile.read("/mnt/e/11Bpg/data/Date_2025526101424.tdms")
+tdms_file = TdmsFile.read("/mnt/e/11Bpg/data/5160_data/Am241/Test_+PL_00001/00001_DAQ.tdms")
 
 print("File Properties:")
 for key, value in tdms_file.properties.items():
