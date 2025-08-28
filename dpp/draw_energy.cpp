@@ -15,16 +15,33 @@ void draw_energy(string name)
   TTree *tr = (TTree*)fi->Get("tr");
 
   std::vector<double> *energy = nullptr;
-
   tr->SetBranchAddress("energy", &energy);
 
   TH1D *h = new TH1D("h", "", 128,0,4096);
 
+  double max = 0.;
   for(int i=0;i<tr->GetEntries();++i){
     tr->GetEntry(i);
 
+    cout <<"size " << energy->size() << endl;
+    if(energy->size()==0){
+      continue;
+    }else{
+      cout <<"size " << energy->size() << endl;
+      max = *(std::max_element(energy->begin(), energy->end()));
+      max /= 1024;
+      cout <<"max " << max << endl;
+      break;
+    }
+  }
+
+  for(int i=0;i<tr->GetEntries();++i){
+    tr->GetEntry(i);
+
+    if(energy->size()==0) continue;
+
     for(size_t j=0;j<energy->size();++j){
-      h->Fill((*energy)[j]/100.);
+      h->Fill((*energy)[j]/max);
     }
   }
 
@@ -38,5 +55,5 @@ void draw_energy(string name)
   fo->Close();
 
   c1->SaveAs(TString::Format("./fig/%s_hist.png",name.c_str()));
-  fi->Close();
+  // fi->Close();
 }

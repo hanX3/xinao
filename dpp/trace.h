@@ -69,10 +69,13 @@ public:
 
   std::vector<double> GetData() const { return v_data; }
   std::vector<double> GetDataMA() const { return v_data_ma; }
+  std::vector<double> GetDataFF() const { return v_data_ff; }
   std::vector<double> GetDataCFD() const { return v_data_cfd; }
   std::vector<double> GetDataRCCR2() const { return v_data_rccr2; }
   std::vector<double> GetDataTrap() const { return v_data_trap; }
 
+  double GetBaseline() const { return baseline; }
+  double GetThreshold() const { return threshold; }
   std::vector<double> GetEnergy() const { return v_energy; }
 
 private:
@@ -82,6 +85,7 @@ private:
 public:
   //
   void MoveAverage(int n, const std::vector<double> &v, std::vector<double> &ma);
+  void FastFilter(xia_cfd_par par, const std::vector<double> &v, std::vector<double> &ff);
   void CFD(xia_cfd_par par, const std::vector<double> &v, std::vector<double> &cfd);
   void RCCR2(rccr2_par par, const std::vector<double> &v, std::vector<double> &rccr2);
   void Trapezoid(trap_par par, const std::vector<double> &v, std::vector<double> &trap);
@@ -90,7 +94,9 @@ public:
   double YY(const std::vector<double> &v, UInt_t i, UInt_t sf, UInt_t rt);
 
 private:
+  Long64_t nn;
   double offset;
+  double baseline;
   double threshold;
 
   std::vector<size_t> v_hit_tag;
@@ -99,6 +105,7 @@ private:
 
   std::vector<double> v_data;
   std::vector<double> v_data_ma;
+  std::vector<double> v_data_ff;
   std::vector<double> v_data_cfd;
   std::vector<double> v_data_rccr2;
   std::vector<double> v_data_trap;

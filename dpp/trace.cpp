@@ -10,6 +10,8 @@
 //
 trace::trace(Short_t d[], Long64_t n)
 {
+  nn = n;
+
   double sum = 0.;
   for(Long64_t i=0;i<n;i++){
     sum += (Double_t)d[i];
@@ -26,11 +28,6 @@ trace::trace(Short_t d[], Long64_t n)
       v_data.push_back(offset-d[i]);
     }
   }
-
-  threshold = std::abs(*(std::min_element(v_data.begin(),v_data.end())));
-  int k = std::pow(10, std::ceil(std::log10(threshold))-1);
-  threshold = k*(int)(threshold/k+1);
-  std::cout << "threshold " << threshold << std::endl;
 }
 
 //
@@ -43,6 +40,7 @@ trace::~trace()
 void trace::Analysis()
 {
   MoveAverage(n_ma, v_data, v_data_ma);
+  FastFilter(xcp, v_data_ma, v_data_ff);
   ComputeHits();
   ComputeEnergy();
 }
@@ -53,63 +51,87 @@ void trace::ComputeHits()
   v_hit_tag.clear();
   m_hit_range.clear();
 
-  std::vector<size_t> v_indices;
+  threshold = std::abs(*(std::min_element(v_data_ff.begin(),v_data_ff.end())));
+  std::cout << "threshold " << threshold << std::endl;
 
-  for(size_t i=0;i<v_data.size();++i){
-    if(v_data[i] > threshold){
-      v_indices.push_back(i);
+  v_hit_tag.push_back(0);
+  for(size_t i=2;i<v_data_ff.size();++i){
+    if(v_data_ff[i]>=threshold && v_data_ff[i-1]<threshold && v_data_ff[i-2]<threshold){
+      v_hit_tag.push_back(i);
     }
   }
   
-  if(v_indices.size()==0){
+  if(v_hit_tag.size()==1){
     std::cout << "none hits." << std::endl;
     return;
   }
 
-  v_hit_tag.push_back(v_indices[0]);
-  for(size_t i=1;i<v_indices.size();++i){
-    if(v_indices[i]-v_indices[i-1]==1) continue;
-    else v_hit_tag.push_back(v_indices[i]);
+  // get baseline
+  v_hit_tag.push_back(nn-1);
+  int max_diff = 1;
+  size_t max_index = 0;
+
+  for(size_t i=0;i<v_hit_tag.size()-1;++i){
+      int diff = v_hit_tag[i+1] - v_hit_tag[i];
+      if(diff>max_diff){
+        max_diff = diff;
+        max_index = i;
+      }
   }
 
+  std::cout << "max_index " << max_index << std::endl;
+  double sum = 0;
+  for(size_t i=v_hit_tag[max_index];i<v_hit_tag[max_index+1];++i){
+    sum += v_data_ma[i];
+  }
+  baseline = sum/(double)(v_hit_tag[max_index+1]-v_hit_tag[max_index]);
+  std::cout << "baseline " << baseline << std::endl;
+  std::cout << "v_hit_tag " << v_hit_tag.size() << std::endl;
+
+  v_hit_tag.erase(v_hit_tag.begin());
+  v_hit_tag.erase(v_hit_tag.end()-1);
+
+  for (const auto& val : v_hit_tag) {
+    std::cout << val << std::endl;
+  }  
+
   std::cout << "total size " << v_hit_tag.size() << std::endl;
-  // std::cout << "indices of elements > " << threshold << ": ";
-  // for(size_t idx : v_hit_tag){
-  //   std::cout << idx << " ";
-  // }
-  // std::cout << std::endl;
 
   //
   for(size_t idx : v_hit_tag){
     size_t x1=idx, x2=idx;
     while(1){
-      if(v_data[x1]<0){
+      if(v_data[x1]<baseline){
         break;
       }else x1--;
     }
     while(1){
-      if(v_data[x2]<0){
+      if(v_data[x2]<baseline){
         break;
       }else x2++;
     }
     m_hit_range[idx] = std::make_pair(x1, x2);
   }
-  // for(auto &[id, range] : m_hit_range){
-  //   std::cout << "ID: " << id << ", Range: [" << range.first << ", " << range.second << ")\n";
-  // }
+  for(auto &[id, range] : m_hit_range){
+    std::cout << "ID: " << id << ", Range: [" << range.first << ", " << range.second << ")\n";
+  }
 
 }
 
 //
 void trace::ComputeEnergy()
 {
-  double e = 0.;
+  double e=0., e_before=0.;
   for(size_t idx : v_hit_tag){
     e = 0.;
     for(size_t i=m_hit_range[idx].first;i<=m_hit_range[idx].second;++i){
       e += v_data[i];
     }
-    v_energy.push_back(e);
+    if(e_before==e) continue;
+    else{
+      v_energy.push_back(e);
+      e_before = e;
+    }
   }
 
   for(size_t e : v_energy){
@@ -131,6 +153,29 @@ void trace::MoveAverage(int n, const std::vector<double> &v, std::vector<double>
     if (i>=n) sum -= v[i-n];
     int count = std::min(i+1, n);
     ma.push_back(sum/count);
+  }
+}
+
+//
+void trace::FastFilter(xia_cfd_par par, const std::vector<double> &v, std::vector<double> &ff)
+{
+  ff.clear();
+
+  int fl = par.fl;
+  int fg = par.fg;
+
+  int n = v.size();
+  ff.resize(n, 0.);
+
+  for(int i=0;i<n;++i){
+    double ff1 = 0., ff2 = 0.;
+    if(i>=(fl-1) && i>=(2*fl+fg-1)){
+      for(int j=i-(fl-1);j<=i;j++)  ff1 += v[j];
+      for(int j=i-(2*fl+fg-1);j<=i-(fl+fg);j++)  ff2 += v[j];
+    }
+
+    ff[i] = ff1-ff2;
+    ff[i] /= fl;
   }
 }
 
@@ -253,8 +298,8 @@ void trace::InitPars()
 {
   n_ma = MoveAverageLength;
 
-  xcp.fl = 1;
-  xcp.fg = 1;
+  xcp.fl = 500;
+  xcp.fg = 0;
   xcp.d = 3;
   xcp.w = 0.25;
 

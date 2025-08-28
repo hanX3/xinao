@@ -22,6 +22,10 @@ public:
 
 private:
   std::vector<double> v_data;
+  std::vector<double> v_data_ma;
+  std::vector<double> v_data_ff;
+  double baseline;
+  double threshold;
   std::vector<double> v_energy;
 
 private:
